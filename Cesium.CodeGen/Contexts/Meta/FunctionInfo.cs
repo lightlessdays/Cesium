@@ -5,23 +5,42 @@ using Cesium.CodeGen.Ir.Types;
 using Cesium.Core;
 using Mono.Cecil;
 
-namespace Cesium.CodeGen.Contexts.Meta;
-
-// TODO[#489]: This is confusing, make immutable.
-internal record FunctionInfo(
-    ParametersInfo? Parameters,
-    IType ReturnType,
-    StorageClass StorageClass,
-    bool IsDefined,
-    MethodReference? MethodReference = null)
+namespace Cesium.CodeGen.Contexts.Meta
 {
-    public ParametersInfo? Parameters { get; set; } = Parameters;
-    public StorageClass StorageClass { get; set; } = StorageClass;
-    public bool IsDefined { get; set; } = IsDefined;
-    public string? CliImportMember { get; set; }
-
-    public void VerifySignatureEquality(string name, ParametersInfo? parameters, IType returnType)
+    // TODO[#489]: This is confusing, make immutable.
+    internal record FunctionInfo(
+        ParametersInfo? Parameters,
+        IType ReturnType,
+        StorageClass StorageClass,
+        bool IsDefined,
+        MethodReference? MethodReference,
+        string? CliImportMember)
     {
+        public FunctionInfo(
+            ParametersInfo? parameters,
+            IType returnType,
+            StorageClass storageClass,
+            bool isDefined,
+            MethodReference? methodReference,
+            string? cliImportMember = null)
+            : this(parameters, returnType, storageClass, isDefined, methodReference, cliImportMember)
+        {
+        }
+
+        public FunctionInfo WithCliImportMember(string? cliImportMember) =>
+            new FunctionInfo(Parameters, ReturnType, StorageClass, IsDefined, MethodReference, cliImportMember);
+
+        public FunctionInfo WithParameters(ParametersInfo? parameters) =>
+            new FunctionInfo(parameters, ReturnType, StorageClass, IsDefined, MethodReference, CliImportMember);
+
+        public FunctionInfo WithStorageClass(StorageClass storageClass) =>
+            new FunctionInfo(Parameters, ReturnType, storageClass, IsDefined, MethodReference, CliImportMember);
+
+        public FunctionInfo WithIsDefined(bool isDefined) =>
+            new FunctionInfo(Parameters, ReturnType, StorageClass, isDefined, MethodReference, CliImportMember);
+
+        public void VerifySignatureEquality(string name, ParametersInfo? parameters, IType returnType)
+        {
         if (!returnType.Equals(ReturnType))
             throw new CompilationException(
                 $"Incorrect return type for function {name} declared as {ReturnType}: {returnType}.");
@@ -54,6 +73,7 @@ internal record FunctionInfo(
             if (!a.Type.IsEqualTo(b.Type))
                 throw new CompilationException(
                     $"Incorrect type for parameter {a.Name}: declared as {b.Type}, defined as {a.Type}.");
+        }
         }
     }
 }
